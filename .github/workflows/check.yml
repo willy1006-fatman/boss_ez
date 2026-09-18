@@ -7,7 +7,7 @@ jobs:
     container: ghcr.io/abc864197532/codebook:latest 
     permissions:
       contents: write
-    steps:
+    steps: 
       - name: Checkout
         uses: actions/checkout@v4
 
