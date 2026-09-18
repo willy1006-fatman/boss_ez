@@ -1,4 +1,4 @@
-codebook.pdf
+
 
 # Created by https://www.toptal.com/developers/gitignore/api/latex,vim
 # Edit at https://www.toptal.com/developers/gitignore?templates=latex,vim
@@ -26,6 +26,7 @@ codebook.pdf
 # *.ps
 # *.eps
 # *.pdf
+
 
 ## Generated if empty string is given at "Please type another file name for output:"
 .pdf
