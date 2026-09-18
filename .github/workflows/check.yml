@@ -9,33 +9,31 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set safe directory
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Check indentation
         run: |
           chmod +x scripts/check_indent.sh
           ./scripts/check_indent.sh
+
       - name: Compile
         run: |
           cd codebook
           texfot latexmk -xelatex --shell-escape codebook.tex
-          cp codebook.pdf /root/codebook.pdf
           cd ..
+
       - name: Check PDF Page
         run: |
           chmod +x scripts/check_pdf_page.sh
           ./scripts/check_pdf_page.sh
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: build
-      - name: Copy PDF
-        run: |
-          cp /root/codebook.pdf codebook.pdf
-      - name: Set safe directory
-        run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-      - name: Commit
+
+      - name: Commit and Push PDF to build branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
+          branch: build
           commit_message: build from ${{ github.ref_name }} - ${{ github.sha }}
-          file_pattern: codebook.pdf
+          file_pattern: codebook/codebook.pdf
