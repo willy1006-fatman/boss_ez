@@ -1,56 +1,42 @@
-template <typename T>
-struct Dinic { // 0-based
-  const T INF = numeric_limits<T>::max() / 2;
-  struct edge { int to, rev; T cap, flow; };
-  int n, s, t;
-  vector <vector <edge>> g;
-  vector <int> dis, cur;
-  T dfs(int u, T cap) {
-    if (u == t || !cap) return cap;
-    for (int &i = cur[u]; i < sz(g[u]); ++i) {
-      edge &e = g[u][i];
-      if (dis[e.to] == dis[u] + 1 && e.flow != e.cap) {
-        T df = dfs(e.to, min(e.cap - e.flow, cap));
-        if (df) {
-          e.flow += df;
-          g[e.to][e.rev].flow -= df;
-          return df;
-        }
-      }
-    }
-    dis[u] = -1;
-    return 0;
-  }
+template <signed_integral Cap = i64> struct Dinic {
+  struct E { int to, rev; Cap cap, flow; };
+  int n, st, ed;
+  vec<vec<E>> g;
+  vec<int> lv, id;
   bool bfs() {
-    dis.assign(n, -1);
-    queue<int> q;
-    q.push(s), dis[s] = 0;
-    while (!q.empty()) {
-      int v = q.front(); q.pop();
-      for (auto &u : g[v])
-        if (dis[u.to] == -1 && u.flow != u.cap) {
-          q.push(u.to);
-          dis[u.to] = dis[v] + 1;
-        }
+    lv.assign(n, 0); id.assign(n, 0);
+    queue<int> q; lv[q.emplace(st)] = 1;
+    while (!empty(q) && !lv[ed]) {
+      int u = q.front(); q.pop();
+      for (auto&& e : g[u]) if (e.flow < e.cap && !lv[e.to])
+        lv[q.emplace(e.to)] = lv[u] + 1;
     }
-    return dis[t] != -1;
+    return lv[ed];
   }
-  T solve(int _s, int _t) {
-    s = _s, t = _t;
-    T flow = 0, df;
-    while (bfs()) {
-      cur.assign(n, 0);
-      while ((df = dfs(s, INF))) flow += df;
+  Cap dfs(int u, Cap f = numeric_limits<Cap>::max()) {
+    if (u == ed) return f;
+    Cap ret = 0;
+    for (int& i = id[u]; i < ssize(g[u]); i++) {
+      auto &[to, rev, cap, flow] = g[u][i];
+      Cap rem = cap - flow;
+      if (rem <= 0 || lv[to] != lv[u] + 1) continue;
+      Cap nf = dfs(to, min(f, rem));
+      flow += nf; g[to][rev].flow -= nf;
+      ret += nf; f -= nf;
+      if (f == 0) return ret;
     }
-    return flow;
+    if (ret == 0) lv[u] = 0;
+    return ret;
   }
-  void add_edge(int u, int v, T cap) {
-    g[u].pb(edge{v, sz(g[v]), cap, 0});
-    g[v].pb(edge{u, sz(g[u]) - 1, 0, 0});
+  void init(int n_) { g.assign(n = n_, vec<E>()); }
+  void add_edge(int u, int v, Cap c) {
+    int i = size(g[u]), j = size(g[v]);
+    g[u].emplace_back(v, j + (u == v), c, 0);
+    g[v].emplace_back(u, i, 0, 0);
   }
-  Dinic (int _n) : n(_n), g(n) {}
-//void reset() {
-//  for (int i = 0; i < n; ++i)
-//    for (auto &j : g[i]) j.flow = 0;
-//}
+  Cap max_flow(int st_, int ed_) {
+    st = st_, ed = ed_; Cap ret = 0;
+    while (bfs()) ret += dfs(st);
+    return ret;
+  }
 };
