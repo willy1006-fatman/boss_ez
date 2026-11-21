@@ -1,36 +1,25 @@
-struct HopcroftKarp { // 0-based
-  int n, m;
-  vector <vector <int>> g;
-  vector <int> l, r, d;
-  bool dfs(int x) {
-    for (int y : g[x]) if (r[y] == -1 ||
-      (d[r[y]] == d[x] + 1 && dfs(r[y])))
-      return l[x] = y, r[y] = x, d[x] = -1, true;
-    return d[x] = -1, false;
-  }
-  bool bfs() {
-    d.assign(n, -1);
-    queue <int> q;
-    for (int x = 0; x < n; ++x) if (l[x] == -1)
-      d[x] = 0, q.push(x);
-    bool good = false;
-    while (!q.empty()) {
-      int x = q.front(); q.pop();
-      for (int y : g[x])
-        if (r[y] == -1) good = true;
-        else if (d[r[y]] == -1) 
-          d[r[y]] = d[x] + 1, q.push(r[y]);
+auto HopcroftKarp(int N, int M, auto&& g) {
+  bool mt = true;
+  vec<int> l(N, -1), r(M, -1), d(N);
+  auto L{views::iota(0, N)};
+  while (1) {
+    queue<int> q; d.assign(N, -1);
+    for (auto u : L) if (l[u] == -1) d[q.emplace(u)] = 0;
+    while (!empty(q)) {
+      auto u = q.front(); q.pop();
+      for (auto v : g[u])
+        if (r[v] != -1 && d[r[v]] == -1)
+        d[q.emplace(r[v])] = d[u] + 1;
     }
-    return good;
+    if (!mt) break;
+    mt = false;
+    auto dfs = [&](auto&& self, int u) -> bool {
+      for (auto v : g[u])
+        if (r[v] == -1 || (d[r[v]] == d[u] + 1 && self(self, r[v])))
+          return (d[r[l[u] = v] = u] = -1);
+      d[u] = -1; return false;
+    };
+    for (auto u : L) if (l[u] == -1 && dfs(dfs, u)) mt = true;
   }
-  int solve() {
-    int res = 0;
-    l.assign(n, -1), r.assign(m, -1);
-    while (bfs())
-      for (int x = 0; x < n; ++x) if (l[x] == -1)
-        res += dfs(x);
-    return res;
-  }
-  void add_edge(int x, int y) { g[x].pb(y); }
-  HopcroftKarp (int _n, int _m) : n(_n), m(_m), g(n) {}
-};
+  return tuple{move(l), move(r), move(d)};
+}
