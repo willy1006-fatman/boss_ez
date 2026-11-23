@@ -16,10 +16,11 @@ auto HopcroftKarp(int N, int M, auto&& g) {
     auto dfs = [&](auto&& self, int u) -> bool {
       for (auto v : g[u])
         if (r[v] == -1 || (d[r[v]] == d[u] + 1 && self(self, r[v])))
-          return (d[r[l[u] = v] = u] = -1);
+          return (l[u] = v, r[v] = u, d[u] = -1), true;
       d[u] = -1; return false;
     };
     for (auto u : L) if (l[u] == -1 && dfs(dfs, u)) mt = true;
   }
   return tuple{move(l), move(r), move(d)};
 }
+// vertex cover : u if d[u] == -1 for u in L and l[u] if l[u] != -1 for u in L
