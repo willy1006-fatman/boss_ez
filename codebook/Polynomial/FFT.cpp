@@ -1,19 +1,13 @@
-using T = complex<double>;
-const double PI = acos(-1);
 struct FFT {
-  T w[N];
+  using C = complex<double>; C rt[30];
   FFT() {
-    T dw = {cos(2 * PI / N), sin(2 * PI / N)};
-    w[0] = 1;
-    for (int i = 1; i < N; ++i) w[i] = w[i - 1] * dw;
+    for (int lv = 1, h = 1; lv < 30; lv++, h <<= 1) rt[lv] = polar(1.0, numbers::pi / h);
   }
-  void operator()(vector<T>& a, bool inv = false) {
-    // see NTT, replace ll with T
-    if (inv) {
-      reverse(1 + all(a));
-      T invn = 1.0 / n;
-      for (int i = 0; i < n; ++i) a[i] = a[i] * invn;
+  template <bool inv = false> void ntt(vec<C>& a) const {
+    // same as NTT (drop m, replace add/sub/mul with + - *)
+    if constexpr (inv) {
+      reverse(a.begin() + 1, a.end());
+      for (C& x : a) x /= n;
     }
   }
-} ntt;
-// after mul, round i.real()
+}; // after multiply, round x.real()

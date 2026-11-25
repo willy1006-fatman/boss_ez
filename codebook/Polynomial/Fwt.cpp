@@ -13,24 +13,7 @@ void fwt(vector <int> &a, bool inv = false) {
 }
 vector<int> subs_conv(vector<int> a, vector<int> b) {
   // c_i = sum_{j & k = 0, j | k = i} a_j * b_k
-  int n = __lg(sz(a));
-  vector ha(n + 1, vector<int>(1 << n));
-  vector hb(n + 1, vector<int>(1 << n));
-  vector c(n + 1, vector<int>(1 << n));
-  for (int i = 0; i < 1 << n; ++i) {
-    ha[__builtin_popcount(i)][i] = a[i];
-    hb[__builtin_popcount(i)][i] = b[i];
-  }
-  for (int i = 0; i <= n; ++i)
-    or_fwt(ha[i]), or_fwt(hb[i]);
-  for (int i = 0; i <= n; ++i)
-    for (int j = 0; i + j <= n; ++j)
-      for (int k = 0; k < 1 << n; ++k)
-        c[i + j][k] = add(c[i + j][k],
-          mul(ha[i][k], hb[j][k]));
-  for (int i = 0; i <= n; ++i) or_fwt(c[i], true);
-  vector <int> ans(1 << n);
-  for (int i = 0; i < 1 << n; ++i)
-    ans[i] = c[__builtin_popcount(i)][i];
-  return ans;
+  // Let f_i = a_i * x^(popcnt(i)), g_i = b_i * x^(popcnt(i))
+  // do or fwt on f and g, then mult them pointwise
+  // do inverse fwt and extract [popcnt(i)]f_i, done.
 }

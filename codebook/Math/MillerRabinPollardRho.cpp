@@ -1,55 +1,46 @@
-ll mul(ll x, ll y, ll p) {return (x * y - (ll)((long double)x / p * y) * p + p) % p;} // __int128
-vector<ll> chk = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
-ll Pow(ll a, ll b, ll n) {
-  ll res = 1;
-  for (; b; b >>= 1, a = mul(a, a, n))
-    if (b & 1) res = mul(res, a, n);
-  return res;
-}
-bool check(ll a, ll d, int s, ll n) {
-  a = Pow(a, d, n);
-  if (a <= 1) return 1;
-  for (int i = 0; i < s; ++i, a = mul(a, a, n)) {
-    if (a == 1) return 0;
-    if (a == n - 1) return 1;
+// Deterministic for all n < 2^64.
+bool is_prime(u64 n) {
+  if (n < 3 || n % 2 == 0) return n == 2;
+  int s = countr_zero(n - 1);
+  u64 d = (n - 1) >> s;
+  Mont<u64> mo(n);
+  u64 one = mo.encode(1), neg = n - one;
+  for (u64 a : {2, 325, 9375, 28178, 450775, 9780504, 1795265022}) {
+    if (!(a = mo.encode(a))) continue;
+    u64 x = one;
+    for (u64 e = d; e; e >>= 1, a = mo.mul(a, a))
+      if (e & 1) x = mo.mul(x, a);
+    if (x == one) continue;
+    for (int i = 1; i < s && x != neg; ++i) x = mo.mul(x, x);
+    if (x != neg) return false;
   }
-  return 0;
+  return true;
 }
-bool IsPrime(ll n) {
-  if (n < 2) return 0;
-  if (n % 2 == 0) return n == 2;
-  ll d = n - 1, s = 0;
-  while (d % 2 == 0) d >>= 1, s++;
-  for (ll i : chk) if (!check(i, d, s, n)) return 0;
-  return 1;
-} // 5761f3
-const vector<ll> small = {2, 3, 5, 7, 11, 13, 17, 19};
-ll FindFactor(ll n) {
-  if (IsPrime(n)) return 1;
-  for (ll p : small) if (n % p == 0) return p;
-  ll x, y = 2, d, t = 1;
-  auto f = [&](ll a) {return (mul(a, a, n) + t) % n;};
-  for (int l = 2; ; l <<= 1) {
-    x = y;
-    int m = min(l, 32);
-    for (int i = 0; i < l; i += m) {
-      d = 1;
-      for (int j = 0; j < m; ++j) {
-        y = f(y), d = mul(d, abs(x - y), n);
+// n >= 2: return a proper factor of n, or n itself if n is prime.
+u64 pollard_rho(u64 n) {
+  if (n % 2 == 0) return 2;
+  if (n == 1 || is_prime(n)) return n;
+  static mt19937_64 rng(random_device{}());
+  Mont<u64> mo(n);
+  while (true) {
+    u64 y = mo.encode(rng()), c = mo.encode(rng()), g = 1;
+    for (int len = 1; g == 1; len *= 2) {
+      u64 x = y, p = 1;  // A plain p times an encoded difference stays plain.
+      for (int i = 1; i <= len && g == 1; ++i) {
+        y = mo.add(mo.mul(y, y), c), p = mo.mul(p, mo.sub(x, y));
+        if (i % 64 == 0 || i == len) g = gcd(p, n);
       }
-      ll g = __gcd(d, n);
-      if (g == n) {
-        l = 1, y = 2, t++;
-        break;
-      }
-      if (g != 1) return g;
     }
+    if (g != n) return g;  // g == n: the cycle closed, retry.
   }
 }
-map <ll, int> res;
-void PollardRho(ll n) {
-  if (n == 1) return;
-  if (IsPrime(n)) return res[n]++, void(0);
-  ll d = FindFactor(n);
-  PollardRho(n / d), PollardRho(d);
-} // 57e9e3
+// Append the prime factors of n >= 1 to res, with multiplicity, unsorted.
+auto factorize(u64 n) {
+  vec<u64> res;
+  auto dfs = [&](auto&& self, u64 x) -> void {
+    if (auto d = pollard_rho(x); d != x)
+      self(self, d), self(self, x / d);
+    else if (d != 1) res.emplace_back(d);
+  }; dfs(dfs, n);
+  ranges::sort(res); return res;
+}
